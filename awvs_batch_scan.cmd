@@ -5,7 +5,7 @@ rem PLEASE CHECK THIS FIRST!!!
 rem -----------
 set awvs_cmd="D:\Program Files (x86)\Acunetix\wvs_console.exe"
 set output_path=D:\Test\20130519\
-set scan_list=ce-list-20130519.txt
+set scan_list=test-list.txt
 rem -----------
 
 echo -----    Please Check Settings    -----

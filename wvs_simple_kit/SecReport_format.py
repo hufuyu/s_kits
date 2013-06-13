@@ -3,11 +3,22 @@
 #-------------------------------------------------------------------------------
 # Name   :     SecReport_format.py
 # Purpose:     format report from other security tools.
-# Version:     v0.1.2-20130609
+# Version:     v0.2.0-20130612
 # Author:      hufuyu@gmail.com
-# Created:     09/06/2013
-# Licence:     <your licence>
+# Created:     12/06/2013
+# Licence:     BSD    
 #-------------------------------------------------------------------------------
+# Change log:
+#   v0.2.0:
+#       +   fix 2 bugs
+#       -   not good, just work well.
+#   v0.1.2:
+#       simple ,can store in databse
+# To be (or not be) fix:
+#       +   add command parse.
+#       +   change some code.
+#
+
 import os,re,sqlite3
 
 def parseReport(txt,db_cur):
@@ -25,15 +36,15 @@ def parseReport(txt,db_cur):
         si = (scan_info['name'],scan_info['start'],scan_info['end'],scan_info['banner'],scan_info['OS'],scan_info['tech'])
         db_cur.execute('INSERT INTO Target VALUES (NULL,?,?,?,?,?,?)',si)
         #print(db_cur.execute('SELECT * FROM Target').fetchall())
-    else:
-        return None
+    #else:
+    #    return None
     sum_info = parseSummary(rp)
     if sum_info :
-        print("+++++ \n",sum_info)
+        #print("+++++ \n",sum_info)
         for (threat,path) in sum_info :
             db_cur.execute('INSERT INTO Summary VALUES (NULL,?,?,?)',(scan_info['name'],threat,path))
-    else:
-        return None
+    #else:
+    #    return None
     #print(db_cur.execute('SELECT * FROM Summary').fetchall())
 
 def parseScanInfo(report):
@@ -45,7 +56,7 @@ def parseScanInfo(report):
     if not m :
        return None
     si = m.group(0)
-    #print('+++++  ',si)
+    print('+++++ Scan Info +++++',si)
     '''
     si='Scan of http://180.166.38.49\nScan details\n\nScan information\nStart time             2013/5/19 19:31:13\nFinish time            2013/5/19 19:35:12\nScan time              3 minutes, 59 seconds\nProfile                Default\n\nServer information\nResponsive             True\nServer banner          Apache/2.2.16 (Debian)\nServer OS              Unix\nServer technologies\n\n\n'
     '''
@@ -55,9 +66,9 @@ def parseScanInfo(report):
     s1 = '(?<=Scan of)\s+(?P<name>.*)\s+(?=Scan details).*'
     s2 = '(?<=Start time)\s+(?P<start>.*)\s+(?=Finish time).*'
     s3 = '\s+(?P<end>.*)\s+(?=Scan time).*'
-    s4 = '(?<=Server banner)\s+(?P<banner>.*)\s+(?=Server OS).*'
-    s5 = '\s+(?P<OS>.*)\s+(?=Server technologies).*'
-    s6 = '\s+(?P<tech>.*).*'
+    s4 = '(?<=Server banner)\s+(?P<banner>.*)(?=Server).*'
+    s5 = '(?<=OS)\s+(?P<OS>.*)(?=Server).*'
+    s6 = '(?<=technologies)\s+(?P<tech>.*).*'
     #rep ="r'" + s1 + s2 + s3 + s4 + s5 + s6 + "'" 
     rep =s1 + s2 + s3 + s4 + s5 + s6
     
@@ -98,15 +109,16 @@ def parseSummary(report):
     i=0
     rst=[]
     tmp=''
+    print('____  Summary Info _____',ss)
 
     while( i < len(ss) -1):
         if va in ss[i+1]:
             tmp=ss[i]
             i+=2
         else:
-            i +=1
             #print(i,' : ',ss[i])
             rst.append((tmp,ss[i]))
+            i +=1
     rst.append((tmp,ss[-1]))
     return rst
 
@@ -165,7 +177,7 @@ def main():
     #rf = 'D:/test/report.txt'
     #pdf2txt()
     #try:
-    rp_path = '/home/data/tmp/ssss/'
+    rp_path = '/home/data/tmp/awvs-scan-result/'
     for rf in listFiles(rp_path,'.txt'):
         print('---       ',rf,'         ---')
         parseReport(rf,cur)

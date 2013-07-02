@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-
+#-------------------------------------------------------------------------------
+# Name   :     chk_wooyun_rss.py
+# Purpose:     format report from other security tools.
+# Version:     v0.1.0-3-20130702
+# Author:      hufuyu@gmail.com
+# Licence:     BSD    
+#-------------------------------------------------------------------------------
 
 from urllib.request import urlopen
 import urllib

@@ -45,10 +45,21 @@ set dd=!dd:/=_!
 
 if exist !output_path!!dd! set dd=!dd!.!random!
 md !output_path!!dd!
+
+echo *************** start scan website  **************** 
+echo URL  :  !cc! 
+echo Start:  !date! !time!
+echo .
+if exist !output_path!!dd! echo directory !dd! create OK. 
+echo . 
+
 !awvs_cmd! /Scan !cc!  /SaveFolder !output_path!!dd! /Save /GenerateReport /ReportFormat pdf /Verbose
+
+echo .
+echo URL  :  !cc! 
+echo End  :  !date! !time!
+echo *************** scan website end ****************
 ) 
 
 rem  hufuyu@gmail.com
 rem  v1.1-20130704
-
-

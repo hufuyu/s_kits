@@ -1,13 +1,25 @@
 # http://code.google.com/appengine/docs/python/config/appconfig.html
 
-application: chk_news
-version: 1
+application: chk-info
+version: 3
 runtime: python27
 api_version: 1
-threadsafe: false
+threadsafe: yes
 
 handlers:
-- url: /
-  script: main.py
-- url: /.*
-  script: main.py
+- url: /favicon\.ico
+  static_files: favicon.ico
+  upload: favicon\.ico
+
+- url: /setup
+  script: main.app
+
+- url: /chk/.*
+  script: main.app
+
+- url: .*
+  script: main.app
+
+libraries:
+- name: webapp2
+  version: "2.5.2"

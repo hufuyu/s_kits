@@ -9,7 +9,7 @@
 #---
 #   ver 0.1-20130706
 #           :  just run...  very simple.
-#   
+#
 #---
 
 import logging
@@ -21,7 +21,11 @@ import appDB
 from google.appengine.api import mail
 from google.appengine.api import urlfetch
 from google.appengine.api import users
+from google.appengine.ext import db
+
 from xml.dom.minidom import parseString
+
+#********************* handle URL ******************************
 
 class indexHandler(webapp.RequestHandler):
 
@@ -35,13 +39,19 @@ class indexHandler(webapp.RequestHandler):
 class setupHandler(webapp.RequestHandler):
 
   def get(self):
-        sysconf = appDB.AppConfig.all()
-        if not sysconf.get():
-            ck_wooyun = appDB.AppConfig(name='test',site_type='wooyun_submit',
-                                    url='www.wooyun.org/feeds/submit',
-                                    notice=True,last_get_status='200')
-            ck_wooyun.put()
-            logging.info("input init data: test,wooyun_submit,...")
+        chk_conf = appDB.CheckCfg.all()
+        if not chk_conf.get():
+            try:
+                ck_wooyun = appDB.CheckCfg(name ='test',site_type='wooyun_submit',
+                                        last_chk_id = 0,notice=True,mail_to='natthun@gmail.com',
+                                        last_get_status='200',last_chk_id=0)
+                ck_wooyun.put()
+                res_wooyun = appDB.ResPool(site_type='wooyun_submit',url='www.wooyun.org/feeds/submit',
+                                            last_get_status='200',last_save_id=0)
+                res_wooyun.put()
+                logging.info("input init data: default value,maybe need change")
+            except db.BadValueError:
+                logging.error("init data error")
             return
 
         self.response.headers['Content-Type'] = 'text/plain'
@@ -49,7 +59,6 @@ class setupHandler(webapp.RequestHandler):
         #self.response.out.write(type(sysconf.get()))
         #for entity in sysconf.run():
         #    self.response.out.write(str(entity.key())+"\n")
-
 
 class chkHandler(webapp.RequestHandler):
 
@@ -64,7 +73,7 @@ class chkHandler(webapp.RequestHandler):
             msgs = chkWooyunSubmitRSS(appcfg.url,appcfg.key_words).fetchInfo()
         if appcfg.notice and msgs:
             logging.info("prepare send notice ...")
-            self._sendNotice('natthun@gmail.com','Wooyun',msgs)
+            self.sendNotice('natthun@gmail.com','Wooyun',msgs)
             self.response.headers['Content-Type'] = 'text/plain'
             self.response.out.write("mail send!")
 
@@ -84,7 +93,7 @@ class chkHandler(webapp.RequestHandler):
         #self.redirect("/404.html")
         self.error(404)
 
-    def _sendNotice(self,mailto,site,msgs):
+    def sendNotice(self,mailto,site,msgs):
         sender_address = "Support <hufuyu@gmail.com>"
         user_address = mailto
         subject = "[Sec][Notice]: Some Vulnerability Submited @ %s" % site
@@ -115,6 +124,8 @@ Pls contact ...
         #InvalidSenderError: Unauthorized sender
         except mail.InvalidSenderError:
             logging.error("InvalidSenderError")
+
+#*********************  process site Data ******************************
 
 class chkWooyunSubmitRSS():
 
@@ -197,6 +208,8 @@ class chkWooyunSubmitRSS():
                                         desc=msg['desc'],author=msg['author'],status=msg['status'])
             item.put()
         logging.info("Info store in  DB.")
+
+#********************* start WSGI  ******************************
 
 app = webapp.WSGIApplication([('/', indexHandler),
                               ('/chk/.*', chkHandler),

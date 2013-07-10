@@ -13,25 +13,26 @@ from google.appengine.ext import db
 from google.appengine.api import users
 
 class ResPool(db.Model):
-    name            = db.StringProperty(required=True)
+    name            = db.StringProperty()
     site_type       = db.StringProperty(required=True,choices=set(['wooyun_submit', ]))
     url             = db.StringProperty(required=True)
     last_get_date   = db.DateProperty()
     last_get_status = db.StringProperty(required=True,default='200')
     last_save_id    = db.StringProperty(required=True)
     # set min check time,void too many times.
-    min_gap         = db.StringProperty(required=True)
+    min_gap         = db.StringProperty()
 
-class CheckResCfg(db.Model):
-    desc            = db.StringProperty(required=True)
+class CheckCfg(db.Model):
+    name            = db.StringProperty(required=True)
+    desc            = db.StringProperty()
     site_type       = db.StringProperty(required=True,choices=set(['wooyun_submit', ]))
-    last_chk_id     = db.DateProperty()
+    last_chk_id     = db.IntegerProperty(required=True)
     key_words       = db.StringProperty()
     # send one email  everyday or other(at 8.pm\14pm\16pm).
     notice          = db.BooleanProperty()
     mail_to         = db.StringProperty()
-    start_since     = db.integerPropery()
-    send_mail_num   = db.integerPropery()
+    start_since     = db.DateProperty()
+    send_mail_num   = db.IntegerProperty()
 
 class WooyunSubmitData(db.Model):
     #'link','title','desc','stauts''pubDate','author','guid'

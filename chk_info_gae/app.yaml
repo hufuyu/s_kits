@@ -11,6 +11,9 @@ handlers:
   static_files: favicon.ico
   upload: favicon\.ico
 
+- url: /am/.*
+  script: main.app
+
 - url: /setup
   script: main.app
 
@@ -18,6 +21,9 @@ handlers:
   script: main.app
 
 - url: .*
+  script: main.app
+
+- url: /_ah/mail/.*
   script: main.app
 
 libraries:

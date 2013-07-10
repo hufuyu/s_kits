@@ -39,14 +39,14 @@ class indexHandler(webapp.RequestHandler):
 class setupHandler(webapp.RequestHandler):
 
   def get(self):
-        chk_conf = appDB.CheckCfg.all()
+        chk_conf = models.CheckCfg.all()
         if not chk_conf.get():
             try:
-                ck_wooyun = appDB.CheckCfg(name ='test',site_type='wooyun_submit',
+                ck_wooyun = models.CheckCfg(name ='test',site_type='wooyun_submit',
                                         last_chk_id = 0,notice=True,mail_to='natthun@gmail.com',
                                         last_get_status='200',last_chk_id=0)
                 ck_wooyun.put()
-                res_wooyun = appDB.ResPool(site_type='wooyun_submit',url='www.wooyun.org/feeds/submit',
+                res_wooyun = models.ResPool(site_type='wooyun_submit',url='www.wooyun.org/feeds/submit',
                                             last_get_status='200',last_save_id=0)
                 res_wooyun.put()
                 logging.info("input init data: default value,maybe need change")
@@ -78,8 +78,8 @@ class chkHandler(webapp.RequestHandler):
             self.response.out.write("mail send!")
 
     def _chkReqArgs(self):
-        sysconf = appDB.AppConfig.all()
-        # '/chk/(?P<name>)',check name in table appDB.AppConfig.name
+        sysconf = models.AppConfig.all()
+        # '/chk/(?P<name>)',check name in table models.AppConfig.name
         if not sysconf.get():
             self.response.headers['Content-Type'] = 'text/plain'
             self.response.out.write("Nothing to be check,Pls set frist!")
@@ -204,7 +204,7 @@ class chkWooyunSubmitRSS():
             if not msg.has_key('desc'):
                 msg['desc'] = msg['description']
                 msg['status'] = "ERROR!chk re"
-            item=appDB.WooyunSubmitData(guid=guid,link=msg['link'],title=msg['title'],
+            item=models.WooyunSubmitData(guid=guid,link=msg['link'],title=msg['title'],
                                         desc=msg['desc'],author=msg['author'],status=msg['status'])
             item.put()
         logging.info("Info store in  DB.")

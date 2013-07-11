@@ -1,5 +1,5 @@
-#!/usr/bin/env python2
-# coding: utf-8
+﻿#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
 
 #---
 # project:     chk_news
@@ -73,6 +73,17 @@ class setupHandler(webapp.RequestHandler):
         #for entity in sysconf.run():
         #    self.response.out.write(str(entity.key())+"\n")
 
+class resetHandler(webapp.RequestHandler):
+
+    def get(self):
+        # reset daily number: CheckConfig.daily_mail_num
+        chk_conf = models.CheckConfig.all()
+        if not chk_conf.get():
+            for item in chk_conf.run():
+                item.daily_mail_num = 0
+                item.put()
+            logging.info('Daily  statistics data reset to 0.')
+
 class chkHandler(webapp.RequestHandler):
 
     def get(self):
@@ -81,33 +92,39 @@ class chkHandler(webapp.RequestHandler):
             self.error(404)
             return
 
-        res_pool = models.ResPool.all().filter('site_type =',chk_cfg.site_type).get()
+        res_pool = models.ResPool.all().filter('site_type =',chk_cfg.site_type)
 
-        if not res_pool:
+        if not res_pool.get():
             logging.error('site_type not set in ResPool,Pls chk < %s >' % chk_cfg.site_type)
             self.error(404)
             return
 
-        for res in res_pool:
+        for res in res_pool.run():
             # check gap, if need fetch data
 
             # fetch data  and save
             if res.site_type == 'wooyun_submit':
-                chk_wooyun = chkWooyunSubmitRSS(chk_cfg.url,chk_cfg.key_words)
-                msgs = chk_wooyun.fetchInfo()
-            # save data: get last saved data.  delete repeat.
-            #getData('WooyunSubmitData',res.last_save_id)
-            #    chk_wooyun.saveData(msgs,res.last_save_id + 1)
-            #    res.last_save_id += 1
-            #    res.put()
+                chk_wooyun = chkWooyunSubmitRSS(res.url)
+                msgs = chk_wooyun.fetchData()
+                # save data: get last saved data.  delete repeat.
+                saved = chk_wooyun.saveData(msgs,res.last_save_id)
+                # if save date, update ResPool.last_save_id
+                if saved:
+                    res.last_save_id += 1
+                    res.put()
             # chk data which contain keyword
+                if chk_cfg.last_chk_id < res.last_save_id:
+                    key_msgs = chk_wooyun.checkKeyWord(chk_cfg.last_chk_id,chk_cfg.key_words)
+                    chk_cfg.last_chk_id = res.last_save_id
+                    chk_cfg.put()
 
-
-        if appcfg.notice and msgs:
+        if chk_cfg.notice and key_msgs:
             logging.info("prepare send notice ...")
             self.sendNotice(chk_cfg.mail_to,'Wooyun',msgs)
-            self.response.headers['Content-Type'] = 'text/plain'
-            self.response.out.write("mail send!")
+            chk_cfg.total_mail_num += chk_cfg.total_mail_num
+            chk_cfg.daily_mail_num += chk_cfg.daily_mail_num
+            chk_cfg.put()
+
 
     def _chkReqArgs(self):
         chk_conf = models.CheckConfig.all()
@@ -124,8 +141,6 @@ class chkHandler(webapp.RequestHandler):
         #self.redirect("/404.html")
         self.error(404)
 
-    def checkKeyWord(self,msgs):
-        pass
 
     def sendNotice(self,mailto,site,msgs):
         sender_address = "Support <hufuyu@gmail.com>"
@@ -142,8 +157,8 @@ possible. the summary info are blow:
         context_body   = ''
         i = 1
         for item in msgs:
-            context_body += str(i) + '.  ' + item['title'] + '\n'
-            context_body += item['link'] + '\n\n'
+            context_body += str(i) + '.  ' + item.title + '\n'
+            context_body += item.link + '\n\n'
             i += 1
 
         context_footer = """
@@ -163,11 +178,12 @@ Pls contact ...
 
 class chkWooyunSubmitRSS():
 
-    def __init__(self,url,keyword):
+    def __init__(self,url):
         self.url = url
-        self.keyword = keyword
+        #self.keyword = keyword
+        #self.chk_id = chk_id
 
-    def fetchInfo(self):
+    def fetchData(self):
         if 'http' not in self.url:
             self.url = 'http://'+self.url
         #try:
@@ -186,7 +202,7 @@ class chkWooyunSubmitRSS():
             tag_list = ['link','title','description','pubDate','author','guid']
             items_list.append(self._getItemDict(item,tag_list))
 
-        return self._formatWooyunDesc(items_list)
+        return self._formatWooyun(items_list)
 
     def _getItemDict(self,item,list):
         dict = {}
@@ -196,33 +212,73 @@ class chkWooyunSubmitRSS():
 
         return dict
 
-    def _formatWooyunDesc(self,items):
+    def _formatWooyun(self,items):
         # pease description info in item.items  is dict.
         for dict in items:
+            dict['guid'] = dict['guid'].rsplit('/',1)[1]
             ss = dict['description']
             p1 = u'(?<=简要描述：</strong><br/>)(?P<desc>.*)(?=<br/><strong>详细).*'
-            p2 = u'(?<=说明：</strong><br/>)(?P<status>.*)(?=<br/><br/>).*'
+            p2 = u'(?<=说明：</strong><br/>)(?P<detail>.*)(?=<br/><br/>).*'
             pn = re.compile(p1+p2,re.M|re.S)
             tmp = pn.search(ss)
             if tmp :
                 tmp_dict = tmp.groupdict()
                 for key in tmp_dict.keys():
                     dict[key] = tmp_dict[key]
+
                 logging.info("wooyun rss description item format ...")
-        #    print(ss)
         return items
 
 
-    def saveData(self,msgs):
+    def saveData(self,msgs,last_save_id):
+        if not msgs:
+            logging.info("Nothing to be save!")
+            return False
+        last_save_guid = self._getGuidData(last_save_id)
+        logging.info("%s" % last_save_guid)
+        repeat = True
+        save_id = last_save_id + 1
         for msg in msgs:
-            guid = msg['guid'].rsplit('/',1)[1]
             if not msg.has_key('desc'):
-                msg['desc'] = msg['description']
-                msg['status'] = "ERROR!chk re"
-            item=models.WooyunSubmitData(guid=guid,link=msg['link'],title=msg['title'],
-                                        desc=msg['desc'],author=msg['author'],status=msg['status'])
+                msg['desc']   = msg['description']
+                msg['detail'] = ''
+                logging.info("Not have key desc,Pls check re.")
+            if last_save_guid:
+                if msg['guid'] in last_save_guid:
+                    break
+
+            item=models.WooyunSubmitData(guid=msg['guid'],link=msg['link'],title=msg['title'],
+                                        #desc=msg['desc'],
+                                        author=msg['author'],
+                                         save_id =save_id)
             item.put()
-        logging.info("Info store in  DB.")
+            logging.info("A Info Data store in DB.")
+            repeat = False
+        return not repeat
+
+    def _getGuidData(self,num):
+        wooyun_data = models.WooyunSubmitData.all()
+        list = []
+        wooyun_data.filter("last_save_id =",num)
+        for item in wooyun_data.run():
+            list.append(item.guid)
+
+    def checkKeyWord(self,chk_id,keywords):
+        wooyun = models.WooyunSubmitData.all()
+        notice  = []
+        if keywords:
+            keywords = keywords.replace('，',',').split(',')
+        wooyun.filter('save_id >',chk_id)
+        for item in wooyun.run():
+            if not keywords or self._hasKey():
+                notice.append(item)
+        return notice
+
+    def _hasKeyword(self,item,keywords):
+        for key in keywords:
+            if key in item.desc:
+                return True
+        return False
 
 #********************* start WSGI  ******************************
 #urls =[]
@@ -231,6 +287,7 @@ class chkWooyunSubmitRSS():
 app = webapp.WSGIApplication([('/', indexHandler),
                               ('/chk/.*', chkHandler),
                               ('/setup', setupHandler),
+                              ('/reset/daily',resetHandler),
 				       ], debug=True)
 
 if __name__ == '__main__':

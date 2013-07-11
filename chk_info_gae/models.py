@@ -33,9 +33,9 @@ class CheckConfig(db.Model):
     notice          = db.BooleanProperty()
     mail_to         = db.StringProperty()
     start_since     = db.DateProperty()
-    daily_mail_num  = db.IntegerProperty()
-    total_mail_num  = db.IntegerProperty()
-    total_chk_num   = db.IntegerProperty()
+    daily_mail_num  = db.IntegerProperty(default=0)
+    total_mail_num  = db.IntegerProperty(default=0)
+    total_chk_num   = db.IntegerProperty(default=0)
 
     def getName(self):
         return 'Running...'
@@ -50,6 +50,6 @@ class WooyunSubmitData(db.Model):
     author  = db.StringProperty()
     detail  = db.StringProperty()
     #choices=set([u'未公开', ])
-    status  = db.StringProperty()
-    save_id = db.StringProperty()
+    status  = db.StringProperty(default=u'暂未公开')
+    save_id = db.IntegerProperty()
 

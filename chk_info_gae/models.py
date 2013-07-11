@@ -37,19 +37,19 @@ class CheckConfig(db.Model):
     total_mail_num  = db.IntegerProperty(default=0)
     total_chk_num   = db.IntegerProperty(default=0)
 
-    def getName(self):
-        return 'Running...'
 
 class WooyunSubmitData(db.Model):
     #'link','title','desc','stauts''pubDate','author','guid'
     guid    = db.StringProperty(required=True)
     link    = db.StringProperty(required=True)
-    pubDate = db.DateProperty()
+    pub_date= db.DateProperty()
     title   = db.StringProperty()
-    desc    = db.StringProperty()
+    desc    = db.TextProperty()
     author  = db.StringProperty()
     detail  = db.StringProperty()
     #choices=set([u'未公开', ])
     status  = db.StringProperty(default=u'暂未公开')
     save_id = db.IntegerProperty()
+
+
 

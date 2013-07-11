@@ -106,6 +106,8 @@ class chkHandler(webapp.RequestHandler):
             if res.site_type == 'wooyun_submit':
                 chk_wooyun = chkWooyunSubmitRSS(res.url)
                 msgs = chk_wooyun.fetchData()
+                if not msgs:
+                    return
                 # save data: get last saved data.  delete repeat.
                 saved = chk_wooyun.saveData(msgs,res.last_save_id)
                 # if save date, update ResPool.last_save_id
@@ -117,10 +119,12 @@ class chkHandler(webapp.RequestHandler):
                     key_msgs = chk_wooyun.checkKeyWord(chk_cfg.last_chk_id,chk_cfg.key_words)
                     chk_cfg.last_chk_id = res.last_save_id
                     chk_cfg.put()
+                else:
+                    key_msgs = None
 
         if chk_cfg.notice and key_msgs:
             logging.info("prepare send notice ...")
-            self.sendNotice(chk_cfg.mail_to,'Wooyun',msgs)
+            self.sendNotice(chk_cfg.mail_to,'Wooyun',key_msgs)
             chk_cfg.total_mail_num += chk_cfg.total_mail_num
             chk_cfg.daily_mail_num += chk_cfg.daily_mail_num
             chk_cfg.put()
@@ -150,8 +154,7 @@ class chkHandler(webapp.RequestHandler):
         context_header = """
 Dear user:
 There are some vuln discovered by somebody. please check as soon as
-possible. the summary info are blow:
-
+possible. the summary info are blow:\n
         """
 
         context_body   = ''
@@ -162,8 +165,7 @@ possible. the summary info are blow:
             i += 1
 
         context_footer = """
-
-This email send automate.No longer interested in receiving these emails?,
+\nThis email send automate.No longer interested in receiving these emails?,
 Pls contact ...
         """
 
@@ -186,8 +188,11 @@ class chkWooyunSubmitRSS():
     def fetchData(self):
         if 'http' not in self.url:
             self.url = 'http://'+self.url
-        #try:
-        req = urlfetch.fetch(self.url)
+        try:
+            req = urlfetch.fetch(self.url)
+        except :
+            logging.error("fetch data error.can't download")
+            return none
         # save chk status in AppConfig.last_get_status
         if req.status_code == 200:
             logging.info("fetch info status OK.")
@@ -235,7 +240,8 @@ class chkWooyunSubmitRSS():
             logging.info("Nothing to be save!")
             return False
         last_save_guid = self._getGuidData(last_save_id)
-        logging.info("%s" % last_save_guid)
+        if not last_save_guid:
+            logging.error("get last save ")
         repeat = True
         save_id = last_save_id + 1
         for msg in msgs:
@@ -243,14 +249,12 @@ class chkWooyunSubmitRSS():
                 msg['desc']   = msg['description']
                 msg['detail'] = ''
                 logging.info("Not have key desc,Pls check re.")
-            if last_save_guid:
-                if msg['guid'] in last_save_guid:
+            if msg['guid'] in last_save_guid:
                     break
-
+            logging.info("desc == %s" % msg['desc'])
             item=models.WooyunSubmitData(guid=msg['guid'],link=msg['link'],title=msg['title'],
-                                        #desc=msg['desc'],
-                                        author=msg['author'],
-                                         save_id =save_id)
+                                         desc=msg['desc'],author=msg['author'],
+                                         detail=msg['detail'],save_id =save_id)
             item.put()
             logging.info("A Info Data store in DB.")
             repeat = False
@@ -258,10 +262,11 @@ class chkWooyunSubmitRSS():
 
     def _getGuidData(self,num):
         wooyun_data = models.WooyunSubmitData.all()
-        list = []
-        wooyun_data.filter("last_save_id =",num)
+        guid_list = []
+        wooyun_data.filter("save_id =",num)
         for item in wooyun_data.run():
-            list.append(item.guid)
+            guid_list.append(item.guid)
+        return guid_list
 
     def checkKeyWord(self,chk_id,keywords):
         wooyun = models.WooyunSubmitData.all()
@@ -270,7 +275,7 @@ class chkWooyunSubmitRSS():
             keywords = keywords.replace('，',',').split(',')
         wooyun.filter('save_id >',chk_id)
         for item in wooyun.run():
-            if not keywords or self._hasKey():
+            if not keywords or self._hasKey(item,keywords):
                 notice.append(item)
         return notice
 

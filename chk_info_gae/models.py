@@ -17,12 +17,13 @@ class ResPool(db.Model):
     site_type       = db.StringProperty(required=True,choices=set(['wooyun_submit', ]))
     url             = db.StringProperty(required=True)
     last_get_date   = db.DateProperty()
-    last_get_status = db.StringProperty(required=True,default='200')
-    last_save_id    = db.StringProperty(required=True)
+    last_get_status = db.StringProperty(default='200')
+    last_save_id    = db.IntegerProperty(required=True)
     # set min check time,void too many times.
     min_gap         = db.StringProperty()
 
-class CheckCfg(db.Model):
+
+class CheckConfig(db.Model):
     name            = db.StringProperty(required=True)
     desc            = db.StringProperty()
     site_type       = db.StringProperty(required=True,choices=set(['wooyun_submit', ]))
@@ -32,7 +33,12 @@ class CheckCfg(db.Model):
     notice          = db.BooleanProperty()
     mail_to         = db.StringProperty()
     start_since     = db.DateProperty()
-    send_mail_num   = db.IntegerProperty()
+    daily_mail_num  = db.IntegerProperty()
+    total_mail_num  = db.IntegerProperty()
+    total_chk_num   = db.IntegerProperty()
+
+    def getName(self):
+        return 'Running...'
 
 class WooyunSubmitData(db.Model):
     #'link','title','desc','stauts''pubDate','author','guid'
@@ -42,6 +48,7 @@ class WooyunSubmitData(db.Model):
     title   = db.StringProperty()
     desc    = db.StringProperty()
     author  = db.StringProperty()
+    detail  = db.StringProperty()
     #choices=set([u'未公开', ])
     status  = db.StringProperty()
     save_id = db.StringProperty()

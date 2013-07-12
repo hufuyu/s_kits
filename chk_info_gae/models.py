@@ -29,12 +29,14 @@ class CheckConfig(db.Model):
     last_chk_id     = db.IntegerProperty(required=True)
     key_words       = db.StringProperty()
     # send one email  everyday or other(at 8.pm\14pm\16pm).
-    notice          = db.BooleanProperty()
+    notice          = db.BooleanProperty(default=True)
     mail_to         = db.StringProperty()
+    sent_freq       = db.StringProperty()
     since           = db.DateTimeProperty()
     daily_mail_num  = db.IntegerProperty(default=0)
     total_mail_num  = db.IntegerProperty(default=0)
     total_chk_num   = db.IntegerProperty(default=0)
+
 
 class WooyunSubmitData(db.Model):
     #'link','title','desc','stauts''pubDate','author','guid'
@@ -48,4 +50,6 @@ class WooyunSubmitData(db.Model):
     #choices=set([u'未公开', ])
     status  = db.StringProperty(default=u'暂未公开')
     save_id = db.IntegerProperty()
+
+
 

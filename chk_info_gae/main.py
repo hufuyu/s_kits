@@ -51,18 +51,18 @@ pre { background: #F2F2F2; padding: 10px; }
         self.response.headers['Content-Type'] = 'text/html'
         self.response.out.write(index_tpl % index_tpl_args)
 
-class setupHandler(webapp.RequestHandler):
+class init_dbHandler(webapp.RequestHandler):
 
   def get(self):
         chk_conf = models.CheckConfig.all()
         if not chk_conf.get():
             try:
                 ck_wooyun = models.CheckConfig(name ='test',site_type='wooyun_submit',
-                                        last_chk_id = 0,notice=True,mail_to='natthun@gmail.com',
+                                        last_chk_id = config.DB_INIT_SAVE_ID,notice=True,mail_to='natthun@gmail.com',
                                         since=datetime.now())
                 ck_wooyun.put()
                 res_wooyun = models.ResPool(site_type='wooyun_submit',url='www.wooyun.org/feeds/submit',
-                                            last_get_status='200',last_save_id=0)
+                                            last_get_status='200',last_save_id=config.DB_INIT_SAVE_ID)
                 res_wooyun.put()
                 logging.info("input init data: default value,maybe need change")
             except db.BadValueError:
@@ -126,9 +126,9 @@ class chkHandler(webapp.RequestHandler):
 
         if chk_cfg.notice and key_msgs:
             logging.info("prepare send notice ...")
-            self.sendNotice(chk_cfg.mail_to,'Wooyun',key_msgs)
-            chk_cfg.total_mail_num += chk_cfg.total_mail_num
-            chk_cfg.daily_mail_num += chk_cfg.daily_mail_num
+            self.sendNotice(chk_cfg.mail_to,key_msgs)
+            chk_cfg.total_mail_num += 1
+            chk_cfg.daily_mail_num += 1
             chk_cfg.put()
 
 
@@ -148,16 +148,10 @@ class chkHandler(webapp.RequestHandler):
         self.error(404)
 
 
-    def sendNotice(self,mailto,site,msgs):
-        sender_address = "Support" + config.SENDER_ADDR
+    def sendNotice(self,mailto,msgs):
+        sender_address = "Support" + config.SEND_ADDR
         user_address = mailto
-        subject = "[Sec][Notice]: Some Vulnerability Submited @ %s" % site
-
-        context_header = """
-Dear user:
-There are some vuln discovered by somebody. please check as soon as
-possible. the summary info are blow:\n
-        """
+        subject = "[Sec][Notice]: Some Vulnerability Submited"
 
         context_body   = ''
         i = 1
@@ -166,12 +160,7 @@ possible. the summary info are blow:\n
             context_body += item.link + '\n\n'
             i += 1
 
-        context_footer = """
-\nThis email send automate.No longer interested in receiving these emails?,
-Pls contact ...
-        """
-
-        context  =  context_header + context_body + context_footer
+        context  =  config.MAIL_CONTEXT_HEADER + context_body + config.MAIL_CONTEXT_FOOTER
         try:
             mail.send_mail(sender_address, user_address, subject, context)
         #InvalidSenderError: Unauthorized sender
@@ -295,7 +284,7 @@ class chkWooyunSubmitRSS():
 
 app = webapp.WSGIApplication([('/', indexHandler),
                               ('/chk/.*', chkHandler),
-                              ('/setup', setupHandler),
+                              (config.INIT_DB_URL, init_dbHandler),
                               ('/reset/daily',resetHandler),
 				       ], debug=True)
 

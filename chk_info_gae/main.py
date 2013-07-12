@@ -7,23 +7,25 @@
 # Author:      hufuyu@gmail.com
 # Licence:     BSD
 #---
+#   ver 0.3-20130711
+#           *  fix bugs: save every hour/ wooyun[description] re error.
 #   ver 0.1-20130706
-#           :  just run...  very simple.
-#
+#           *  just run...  very simple.
 #---
 
 import logging
 import re
 import webapp2 as webapp
-import datetime
+from xml.dom.minidom import parseString
+from datetime import datetime
+
+import config
 import models
 
 from google.appengine.api import mail
 from google.appengine.api import urlfetch
 from google.appengine.api import users
 from google.appengine.ext import db
-
-from xml.dom.minidom import parseString
 
 #********************* handle URL ******************************
 
@@ -57,7 +59,7 @@ class setupHandler(webapp.RequestHandler):
             try:
                 ck_wooyun = models.CheckConfig(name ='test',site_type='wooyun_submit',
                                         last_chk_id = 0,notice=True,mail_to='natthun@gmail.com',
-                                        )
+                                        since=datetime.now())
                 ck_wooyun.put()
                 res_wooyun = models.ResPool(site_type='wooyun_submit',url='www.wooyun.org/feeds/submit',
                                             last_get_status='200',last_save_id=0)
@@ -147,7 +149,7 @@ class chkHandler(webapp.RequestHandler):
 
 
     def sendNotice(self,mailto,site,msgs):
-        sender_address = "Support <hufuyu@gmail.com>"
+        sender_address = "Support" + config.SENDER_ADDR
         user_address = mailto
         subject = "[Sec][Notice]: Some Vulnerability Submited @ %s" % site
 
@@ -244,7 +246,9 @@ class chkWooyunSubmitRSS():
             logging.error("get last save ")
         repeat = True
         save_id = last_save_id + 1
+
         for msg in msgs:
+            dt = datetime.strptime(msg['pubDate'],'%a, %d %b %Y %H:%M:%S +0800')
             if not msg.has_key('desc'):
                 msg['desc']   = msg['description']
                 msg['detail'] = ''
@@ -253,7 +257,7 @@ class chkWooyunSubmitRSS():
                     break
             logging.info("desc == %s" % msg['desc'])
             item=models.WooyunSubmitData(guid=msg['guid'],link=msg['link'],title=msg['title'],
-                                         desc=msg['desc'],author=msg['author'],
+                                         desc=msg['desc'],author=msg['author'],pub_date=dt,
                                          detail=msg['detail'],save_id =save_id)
             item.put()
             logging.info("A Info Data store in DB.")

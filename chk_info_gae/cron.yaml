@@ -5,4 +5,5 @@ cron:
 
 - description: reset daily count
   url: /reset/daily
-  schedule: every 1 days
+  timezone: Asia/Shanghai
+  schedule: every day 00:09

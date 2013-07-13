@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #---
-# project:     chk_news
+# project:     chk-info-gae
 # Purpose:     format report from other security tools.
 # Author:      hufuyu@gmail.com
 # Licence:     BSD

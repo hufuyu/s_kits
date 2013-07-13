@@ -2,11 +2,15 @@
 # -*- coding: utf-8 -*-
 
 #---
-# project:     chk_news
+# project:     chk-info-gae
 # Purpose:     format report from other security tools.
 # Author:      hufuyu@gmail.com
 # Licence:     BSD
 #---
+#   todo:
+#           *  user  bootstrap , handle data.
+#           *  add  task queue , spilt fetch data OP & chk OP
+#           *  add  new URL to check
 #   ver 0.3-20130711
 #           *  fix bugs: save every hour/ wooyun[description] re error.
 #   ver 0.1-20130706
@@ -274,7 +278,7 @@ class chkWooyunSubmitRSS():
 
     def _hasKeyword(self,item,keywords):
         for key in keywords:
-            if key in item.desc:
+            if key in item.title or key in item.desc:
                 return True
         return False
 

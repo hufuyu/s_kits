@@ -40,16 +40,23 @@ class CheckConfig(db.Model):
 
 class WooyunSubmitData(db.Model):
     #'link','title','desc','stauts''pubDate','author','guid'
+    # rename 'WooyunData' add 'vuln_type','rank','status'
+    # renew date over one month
     guid    = db.StringProperty(required=True)
     link    = db.StringProperty(required=True)
     pub_date= db.DateTimeProperty()
     title   = db.StringProperty()
     desc    = db.TextProperty()
     author  = db.StringProperty()
-    detail  = db.StringProperty()
+    detail  = db.TextProperty()
     #choices=set([u'未公开', ])
     status  = db.StringProperty(default=u'暂未公开')
     save_id = db.IntegerProperty()
 
-
+class SysStat(db.Model):
+    # stat sys run every daily.
+    # such as : save_id
+    stats_id       = db.StringProperty(required=True)
+    stats_at      = db.DateTimeProperty()
+    count         = db.IntegerProperty(required=True)
 

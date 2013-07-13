@@ -3,7 +3,7 @@ cron:
   url: /chk/test
   schedule: every 1 hours
 
-- description: reset daily count
+- description: reset daily count & make daily statitcs.
   url: /reset/daily
   timezone: Asia/Shanghai
   schedule: every day 00:09

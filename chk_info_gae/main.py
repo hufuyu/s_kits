@@ -155,7 +155,7 @@ class chkHandler(webapp.RequestHandler):
 
     def chk_keywords(self,chk_cfg,res):
             # chk data which contain keyword
-        if chk_cfg.last_chk_id < res.last_save_id and not chk_cfg.keyword:
+        if chk_cfg.last_chk_id < res.last_save_id and not chk_cfg.key_words:
             key_msgs = chk_wooyun.checkKeyWord(chk_cfg.last_chk_id,chk_cfg.key_words)
             chk_cfg.last_chk_id = res.last_save_id
             chk_cfg.put()

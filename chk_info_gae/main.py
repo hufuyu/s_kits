@@ -42,8 +42,37 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 class indexHandler(webapp.RequestHandler):
 
     def get(self):
+        #path = os.path.join(os.path.dirname(__file__), 'static/tpl/base.html')
+        #self.response.write(template.render(path))
         template = JINJA_ENVIRONMENT.get_template('static/tpl/base.html')
         self.response.write(template.render())
+
+class loginHandler(webapp.RequestHandler):
+
+    def get(self):
+        template = JINJA_ENVIRONMENT.get_template('static/tpl/login.html')
+        self.response.write(template.render())
+
+class chk_itemHandler(webapp.RequestHandler):
+
+    def get(self):
+        # if method == 'add':
+        template = JINJA_ENVIRONMENT.get_template('static/tpl/add_chk_item.html')
+        self.response.write(template.render())
+
+    def post(self):
+        if self.request.get('Name') and  self.request.get('SiteType'):
+            #bug: Not check.
+            isNotice  = self.request.get('isNotice')
+            ck_wooyun = models.CheckConfig(name =self.request.get('Name'),site_type=self.request.get('SiteType'),
+                                        last_chk_id = config.DB_INIT_SAVE_ID,notice=True,
+                                        mail_to=self.request.get('Emails'),
+                                        since=datetime.now())
+            ck_wooyun.put()
+            logging.info("add chk_config:" + isNotice)
+        else:
+            self.redirect('/am/chk_item/add')           
+
 
 class init_dbHandler(webapp.RequestHandler):
 
@@ -69,7 +98,7 @@ class init_dbHandler(webapp.RequestHandler):
         #for entity in sysconf.run():
         #    self.response.out.write(str(entity.key())+"\n")
 
-class resetHandler(webapp.RequestHandler):
+class dailyHandler(webapp.RequestHandler):
 
     def get(self):
         # reset daily number: CheckConfig.daily_mail_num
@@ -79,6 +108,16 @@ class resetHandler(webapp.RequestHandler):
                 item.daily_mail_num = 0
                 item.put()
             logging.info('Daily  statistics data reset to 0.')
+
+        # send a summary email which keyword is null.
+        chk_config = models.CheckConfig.all().filter('key_words =','')
+        if chk_config:
+            for chk_cfg in chk_config:
+                res_pool = models.ResPool.all().filter('site_type =',chk_cfg.site_type)
+                for res in res_pool:
+                    chkHandler.chk_keywords(self,chk_cfg,res)
+        else:
+            logging.info("No need send a summary mail")
 
 class chkHandler(webapp.RequestHandler):
 
@@ -110,13 +149,16 @@ class chkHandler(webapp.RequestHandler):
                 if saved:
                     res.last_save_id += 1
                     res.put()
+                self.chk_cfg(chk_cfg,res)
+
+    def chk_keywords(self,chk_cfg,res):
             # chk data which contain keyword
-                if chk_cfg.last_chk_id < res.last_save_id:
-                    key_msgs = chk_wooyun.checkKeyWord(chk_cfg.last_chk_id,chk_cfg.key_words)
-                    chk_cfg.last_chk_id = res.last_save_id
-                    chk_cfg.put()
-                else:
-                    key_msgs = None
+        if chk_cfg.last_chk_id < res.last_save_id and not chk_cfg.keyword:
+            key_msgs = chk_wooyun.checkKeyWord(chk_cfg.last_chk_id,chk_cfg.key_words)
+            chk_cfg.last_chk_id = res.last_save_id
+            chk_cfg.put()
+        else:
+            key_msgs = None
 
         if chk_cfg.notice and key_msgs:
             logging.info("prepare send notice ...")
@@ -216,7 +258,7 @@ class chkWooyunSubmitRSS():
                 for key in tmp_dict.keys():
                     dict[key] = tmp_dict[key]
 
-                logging.info("wooyun rss description item format ...")
+                #logging.info("wooyun rss description item format ...")
         return items
 
 
@@ -279,7 +321,9 @@ class chkWooyunSubmitRSS():
 app = webapp.WSGIApplication([('/', indexHandler),
                               ('/chk/.*', chkHandler),
                               (config.INIT_DB_URL, init_dbHandler),
-                              ('/reset/daily',resetHandler),
+                              ('/am/daily',dailyHandler),
+                              ('/am/login',loginHandler),
+                              ('/am/chk_item/add',chk_itemHandler),
 				       ], debug=True)
 
 if __name__ == '__main__':

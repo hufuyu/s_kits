@@ -19,6 +19,7 @@ handlers:
 
 - url: /am/.*
   script: main.app
+#  login: admin
 
 - url: /setup
   script: main.app
@@ -40,4 +41,3 @@ libraries:
 
 - name: jinja2
   version: latest
-  

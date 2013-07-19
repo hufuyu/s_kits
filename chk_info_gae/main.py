@@ -8,9 +8,11 @@
 # Licence:     BSD
 #---
 #   todo:
-#           *  user  bootstrap , handle data.
-#           *  add  task queue , spilt fetch data OP & chk OP
+#           *  add  search
+#           *  add  task queue 
 #           *  add  new URL to check
+#   ver 0.4-20130719
+#           *  spilt fetch data OP & chk OP, user  bootstrap , handle data.
 #   ver 0.3-20130711
 #           *  fix bugs: save every hour/ wooyun[description] re error.
 #   ver 0.1-20130706
@@ -149,7 +151,7 @@ class chkHandler(webapp.RequestHandler):
                 if saved:
                     res.last_save_id += 1
                     res.put()
-                self.chk_cfg(chk_cfg,res)
+                self.chk_keywords(chk_cfg,res)
 
     def chk_keywords(self,chk_cfg,res):
             # chk data which contain keyword

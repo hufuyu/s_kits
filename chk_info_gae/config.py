@@ -8,14 +8,14 @@
 # Licence:     BSD
 #---
 
-SEND_ADDR       = hufuyu@gmail.com
+SEND_ADDR       = 'hufuyu@gmail.com'
 
 # init datebase,Pls set complex enough.
 # THis only use onetime.
-INIT_DB_URL       = /am/db/init
+INIT_DB_URL       = '/am/db/init'
 
 # flush database,Pls set complex enough.
-FLUSH_DB_URL      = /am/db/flush
+FLUSH_DB_URL      = '/am/db/flush'
 
 
 # db default settings.

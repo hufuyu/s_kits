@@ -19,41 +19,31 @@
 
 import logging
 import re
-import webapp2 as webapp
+import os
 from xml.dom.minidom import parseString
 from datetime import datetime
 
 import config
 import models
 
+import jinja2
+import webapp2 as webapp
 from google.appengine.api import mail
 from google.appengine.api import urlfetch
 from google.appengine.api import users
 from google.appengine.ext import db
 
 #********************* handle URL ******************************
+JINJA_ENVIRONMENT = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
+    extensions=['jinja2.ext.autoescape'])
+
 
 class indexHandler(webapp.RequestHandler):
 
     def get(self):
-        index_tpl = """
-<html><head>
-<title>%s</title>
-<style>
-body {padding: 20px;font-family: arial, sans-serif;font-size: 14px;}
-pre { background: #F2F2F2; padding: 10px; }
-</style></head>
-<body>%s
-<pre>%s</pre>
-%s</body></html>
-"""
-        title = "chk-info-gae:check some info in sometime,powed by gae."
-        content = "<h1>chk-info-gae</h1><br/>"
-        pre_content = "this is system running info."
-        footer = "powered by gae, Licence:BSD , Other Question,PLs Mail:hufuyu@gmail.com"
-        index_tpl_args = (title,content,pre_content,footer)
-        self.response.headers['Content-Type'] = 'text/html'
-        self.response.out.write(index_tpl % index_tpl_args)
+        template = JINJA_ENVIRONMENT.get_template('static/tpl/base.html')
+        self.response.write(template.render())
 
 class init_dbHandler(webapp.RequestHandler):
 

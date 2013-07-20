@@ -28,9 +28,10 @@ DB_INIT_RESPOOL     =[{
 
 DB_INIT_CHECKCONFIG =[{
                     'name'      : 'test',
-                    'site_type' : 'www.wooyun.org/feeds/submit',
+                    # site_type: don't change this!
+                    'site_type' : 'wooyun_submit',
                     'key_words' : '',
-                    # change this.
+                    # need change.
                     'mail_to'   : 'natthun@gmail.com',
                     }]
 

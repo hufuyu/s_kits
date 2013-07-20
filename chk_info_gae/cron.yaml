@@ -1,7 +1,7 @@
 cron:
 - description: check wooyun rss
-  url: /chk/test
-  schedule: every 1 hours
+  url: /res/wooyun_submit
+  schedule: every 30 minutes
 
 - description: reset daily count & make daily statitcs.
   url: /am/daily

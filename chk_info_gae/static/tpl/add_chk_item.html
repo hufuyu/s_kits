@@ -1,13 +1,13 @@
-{% extends "static/tpl/base.html" %} 
+{% extends "static/tpl/base.html" %}
 
 {% block content %}
 
-<form class="form-horizontal" action="/am/chk_item/add" method='post'>
+<form class="form-horizontal" action="/am/chk/add" method='post'>
   <div class="control-group">
     <label class="control-label" for="inputName" contenteditable="true">Name</label>
     <div class="controls">
       <input id="inputName" name="Name" placeholder="eg:test" type="text">
-      <span class="help-block" contenteditable="true">Must Input. this name is for check url,don't contain blank</span>
+      <span class="help-block" >Must Input. this name is for check url,don't contain blank</span>
     </div>
   </div>
     <div class="control-group">
@@ -23,19 +23,19 @@
       	<option value="wooyun_submit">Wooyun_Submit_RSS</option>
       	<option value="">CNVD...</option>
       </select>
-      <span class="help-block" contenteditable="true">If leave blank, means see all info. This will sent a email everyday by default.</span>
+      <span class="help-block">If leave blank, means see all info. This will sent a email everyday by default.</span>
     </div>
   </div>
   <div class="control-group">
     <label class="control-label" for="inputKeyWords" contenteditable="true">KeyWords</label>
     <div class="controls">
       <input id="inputKeyWords" name="KeyWords" placeholder="eg:注入，电信" type="text">
-      <span class="help-block" contenteditable="true">If leave blank, means see all info. This will sent a email everyday by default.</span>
+      <span class="help-block">If leave blank, means see all info. This will sent a email everyday by default.</span>
     </div>
   </div>
   <div class="control-group">
     <div class="controls">
-      <label class="checkbox" contenteditable="true">
+      <label class="checkbox" >
         <input type="checkbox" name="isNotice">Send Notice</label>
     </div>
   </div>

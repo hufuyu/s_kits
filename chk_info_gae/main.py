@@ -9,8 +9,10 @@
 #---
 #   todo:
 #           *  add  search
-#           *  add  task queue 
+#           *  add  task queue
 #           *  add  new URL to check
+#   ver 0.5-20130720
+#           *  change process. refresh ResPool at time. change cron.
 #   ver 0.4-20130719
 #           *  spilt fetch data OP & chk OP, user  bootstrap , handle data.
 #   ver 0.3-20130711
@@ -66,29 +68,36 @@ class chk_itemHandler(webapp.RequestHandler):
         if self.request.get('Name') and  self.request.get('SiteType'):
             #bug: Not check.
             isNotice  = self.request.get('isNotice')
-            ck_wooyun = models.CheckConfig(name =self.request.get('Name'),site_type=self.request.get('SiteType'),
+            keywords  = self.request.get('KeyWords').replace(u'，',u',')
+            try:
+                ck_wooyun = models.CheckConfig(name =self.request.get('Name'),site_type=self.request.get('SiteType'),
                                         last_chk_id = config.DB_INIT_SAVE_ID,notice=True,
-                                        mail_to=self.request.get('Emails'),
+                                        mail_to=self.request.get('Emails'),key_words=keywords,
                                         since=datetime.now())
-            ck_wooyun.put()
+                ck_wooyun.put()
+            except db.BadValueError:
+                logging.error("add data error")
+                return
             logging.info("add chk_config:" + isNotice)
         else:
-            self.redirect('/am/chk_item/add')           
-
+            self.redirect('/am/chk/add')
 
 class init_dbHandler(webapp.RequestHandler):
 
-  def get(self):
+    def get(self):
         chk_conf = models.CheckConfig.all()
         if not chk_conf.get():
             try:
-                ck_wooyun = models.CheckConfig(name =config.DB_INIT_CHECKCONFIG['name'],site_type=config.DB_INIT_CHECKCONFIG['site_type'],
-                                        last_chk_id = config.DB_INIT_SAVE_ID,notice=True,mail_to=config.DB_INIT_CHECKCONFIG['mail_to'],
-                                        key_words =config.DB_INIT_CHECKCONFIG['key_words'],since=datetime.now())
-                ck_wooyun.put()
-                res_wooyun = models.ResPool(site_type=config.DB_INIT_RESPOOL['site_type'],url=config.DB_INIT_RESPOOL['url'],
+                for cfg_data in config.DB_INIT_CHECKCONFIG:
+                    logging.info(cfg_data['name'] + cfg_data['site_type'] + cfg_data['mail_to'] + cfg_data['key_words'])
+                    ck_wooyun = models.CheckConfig(name =cfg_data['name'],site_type=cfg_data['site_type'],
+                                        last_chk_id = config.DB_INIT_SAVE_ID,notice=True,mail_to=cfg_data['mail_to'],
+                                        key_words =cfg_data['key_words'],since=datetime.now())
+                    ck_wooyun.put()
+                for res_data in config.DB_INIT_RESPOOL:
+                    res_wooyun = models.ResPool(site_type=res_data['site_type'],url=res_data['url'],
                                             last_get_status='200',last_save_id=config.DB_INIT_SAVE_ID)
-                res_wooyun.put()
+                    res_wooyun.put()
                 logging.info("input init data: default value,maybe need change")
             except db.BadValueError:
                 logging.error("init data error")
@@ -113,7 +122,7 @@ class dailyHandler(webapp.RequestHandler):
         else:
             logging.info('Nothing find CheckConfig. maybe need check.')
         # send a summary email which keyword is null.
-        chk_config = models.CheckConfig.all().filter('key_words =',None)
+        chk_config = models.CheckConfig.all().filter('key_words =','')
         if chk_config.get():
             for chk_cfg in chk_config.run():
                 res_pool = models.ResPool.all().filter('site_type =',chk_cfg.site_type)
@@ -121,6 +130,52 @@ class dailyHandler(webapp.RequestHandler):
                     chkHandler().chk_keywords(chk_cfg,res)
         else:
             logging.info("No need send a summary mail")
+
+class resHandler(webapp.RequestHandler):
+
+    def get(self):
+        res = self._chkReqArgs()
+        # fetch data  and save
+        if not res:
+            return
+        if res.site_type == 'wooyun_submit':
+            chk_wooyun = chkWooyunSubmitRSS(res.url)
+            msgs = chk_wooyun.fetchData()
+            if not msgs:
+               return
+                # save data: get last saved data.  delete repeat.
+            saved = chk_wooyun.saveData(msgs,res.last_save_id)
+                # if save date, update ResPool.last_save_id
+            if not saved:
+                logging.info("Nothing saved")
+                return
+            res.last_save_id += 1
+            res.put()
+
+        chk = models.CheckConfig.all().filter('site_type =',res.site_type)
+        if chk.get():
+            for item in chk.run():
+                if item.key_words and item.name:
+                    self.redirect('/chk/' + item.name)
+        else:
+            logging.info('No Need check [' + site +'],Pls set it first')
+
+    def _chkReqArgs(self):
+        arg = self.request.path[5:]
+        if arg :
+            chk_res = models.ResPool.all().filter('site_type =',arg)
+            # '/res/(?P<name>)',check name in table models.ResPool.name
+            if not chk_res.get():
+                logging.info('Not init ResPool,Pls set it first')
+                return
+
+            for entity in chk_res.run():
+                return entity
+        else:
+            logging.info("Bad Request Url:" + self.request.path)
+            #
+            #self.redirect("/404.html")
+            self.error(404)
 
 class chkHandler(webapp.RequestHandler):
 
@@ -139,21 +194,8 @@ class chkHandler(webapp.RequestHandler):
 
         for res in res_pool.run():
             # check gap, if need fetch data
-
-            # fetch data  and save
-            if res.site_type == 'wooyun_submit':
-                chk_wooyun = chkWooyunSubmitRSS(res.url)
-                msgs = chk_wooyun.fetchData()
-                if not msgs:
-                    return
-                # save data: get last saved data.  delete repeat.
-                saved = chk_wooyun.saveData(msgs,res.last_save_id)
-                # if save date, update ResPool.last_save_id
-                if saved:
-                    res.last_save_id += 1
-                    res.put()
-                if chk_cfg.key_words:
-                    self.chk_keywords(chk_cfg,res)
+            #if chk_cfg.key_words:
+             self.chk_keywords(chk_cfg,res)
 
     def chk_keywords(self,chk_cfg,res):
             # chk data which contain keyword
@@ -166,6 +208,9 @@ class chkHandler(webapp.RequestHandler):
 
         if chk_cfg.notice and key_msgs:
             logging.info("prepare send notice ...")
+            if not chk_cfg.mail_to:
+                logging.error("Notice Email Address is Null,Pls check.")
+                return
             self.sendNotice(chk_cfg.mail_to,key_msgs)
             chk_cfg.total_mail_num += 1
             chk_cfg.daily_mail_num += 1
@@ -204,8 +249,8 @@ class chkHandler(webapp.RequestHandler):
         try:
             mail.send_mail(sender_address, user_address, subject, context)
         #InvalidSenderError: Unauthorized sender
-        except mail.InvalidSenderError:
-            logging.error("InvalidSenderError")
+        except mail.InvalidSenderError,mail.InvalidEmailError:
+            logging.error("InvalidSenderError or Invalid Email Address Error")
 
 #*********************  process site Data ******************************
 
@@ -305,10 +350,11 @@ class chkWooyunSubmitRSS():
         wooyun = models.WooyunSubmitData.all()
         notice  = []
         if keywords:
-            keywords = keywords.replace('，',',').split(',')
+            # replace ',' before saved
+            keywords = keywords.split(',')
         wooyun.filter('save_id >',chk_id)
         for item in wooyun.run():
-            if not keywords or self._hasKey(item,keywords):
+            if not keywords or self._hasKeyword(item,keywords):
                 notice.append(item)
         return notice
 
@@ -324,10 +370,11 @@ class chkWooyunSubmitRSS():
 
 app = webapp.WSGIApplication([('/', indexHandler),
                               ('/chk/.*', chkHandler),
+                              ('/res/.*', resHandler),
                               (config.INIT_DB_URL, init_dbHandler),
                               ('/am/daily',dailyHandler),
                               ('/am/login',loginHandler),
-                              ('/am/chk_item/add',chk_itemHandler),
+                              ('/am/chk/add',chk_itemHandler),
 				       ], debug=True)
 
 if __name__ == '__main__':

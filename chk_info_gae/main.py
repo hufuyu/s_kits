@@ -82,11 +82,11 @@ class init_dbHandler(webapp.RequestHandler):
         chk_conf = models.CheckConfig.all()
         if not chk_conf.get():
             try:
-                ck_wooyun = models.CheckConfig(name ='test',site_type='wooyun_submit',
-                                        last_chk_id = config.DB_INIT_SAVE_ID,notice=True,mail_to='natthun@gmail.com',
-                                        since=datetime.now())
+                ck_wooyun = models.CheckConfig(name =config.DB_INIT_CHECKCONFIG['name'],site_type=config.DB_INIT_CHECKCONFIG['site_type'],
+                                        last_chk_id = config.DB_INIT_SAVE_ID,notice=True,mail_to=config.DB_INIT_CHECKCONFIG['mail_to'],
+                                        key_words =config.DB_INIT_CHECKCONFIG['key_words'],since=datetime.now())
                 ck_wooyun.put()
-                res_wooyun = models.ResPool(site_type='wooyun_submit',url='www.wooyun.org/feeds/submit',
+                res_wooyun = models.ResPool(site_type=config.DB_INIT_RESPOOL['site_type'],url=config.DB_INIT_RESPOOL['url'],
                                             last_get_status='200',last_save_id=config.DB_INIT_SAVE_ID)
                 res_wooyun.put()
                 logging.info("input init data: default value,maybe need change")

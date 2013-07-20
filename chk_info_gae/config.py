@@ -8,7 +8,8 @@
 # Licence:     BSD
 #---
 
-SEND_ADDR       = 'hufuyu@gmail.com'
+#SEND_ADDR       = 'hufuyu@gmail.com'
+SEND_ADDR       = 'chk-info@appspot.com'
 
 # init datebase,Pls set complex enough.
 # THis only use onetime.
@@ -19,8 +20,19 @@ FLUSH_DB_URL      = '/am/db/flush'
 
 
 # db default settings.
-DB_INIT_SAVE_ID   = 0
+DB_INIT_SAVE_ID     = 0
+DB_INIT_RESPOOL     =[{
+                    'site_type' : 'wooyun_submit',
+                    'url'       : 'www.wooyun.org/feeds/submit',
+                    }]
 
+DB_INIT_CHECKCONFIG =[{
+                    'name'      : 'test',
+                    'site_type' : 'www.wooyun.org/feeds/submit',
+                    'key_words' : '',
+                    # change this.
+                    'mail_to'   : 'natthun@gmail.com',
+                    }]
 
 # mail  settings:
 MAIL_CONTEXT_HEADER = """

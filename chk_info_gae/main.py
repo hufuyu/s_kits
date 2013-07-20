@@ -105,19 +105,20 @@ class dailyHandler(webapp.RequestHandler):
     def get(self):
         # reset daily number: CheckConfig.daily_mail_num
         chk_conf = models.CheckConfig.all()
-        if not chk_conf.get():
+        if chk_conf.get():
             for item in chk_conf.run():
                 item.daily_mail_num = 0
                 item.put()
             logging.info('Daily  statistics data reset to 0.')
-
+        else:
+            logging.info('Nothing find CheckConfig. maybe need check.')
         # send a summary email which keyword is null.
-        chk_config = models.CheckConfig.all().filter('key_words =','')
-        if chk_config:
-            for chk_cfg in chk_config:
+        chk_config = models.CheckConfig.all().filter('key_words =',None)
+        if chk_config.get():
+            for chk_cfg in chk_config.run():
                 res_pool = models.ResPool.all().filter('site_type =',chk_cfg.site_type)
                 for res in res_pool:
-                    chkHandler.chk_keywords(self,chk_cfg,res)
+                    chkHandler().chk_keywords(chk_cfg,res)
         else:
             logging.info("No need send a summary mail")
 
@@ -151,12 +152,13 @@ class chkHandler(webapp.RequestHandler):
                 if saved:
                     res.last_save_id += 1
                     res.put()
-                self.chk_keywords(chk_cfg,res)
+                if chk_cfg.key_words:
+                    self.chk_keywords(chk_cfg,res)
 
     def chk_keywords(self,chk_cfg,res):
             # chk data which contain keyword
-        if chk_cfg.last_chk_id < res.last_save_id and not chk_cfg.key_words:
-            key_msgs = chk_wooyun.checkKeyWord(chk_cfg.last_chk_id,chk_cfg.key_words)
+        if chk_cfg.last_chk_id < res.last_save_id:
+            key_msgs = chkWooyunSubmitRSS().checkKeyWord(chk_cfg.last_chk_id,chk_cfg.key_words)
             chk_cfg.last_chk_id = res.last_save_id
             chk_cfg.put()
         else:
@@ -187,7 +189,7 @@ class chkHandler(webapp.RequestHandler):
 
 
     def sendNotice(self,mailto,msgs):
-        sender_address = "Support" + config.SEND_ADDR
+        sender_address = "Support<" + config.SEND_ADDR +">"
         user_address = mailto
         subject = "[Sec][Notice]: Some Vulnerability Submited"
 
@@ -209,7 +211,7 @@ class chkHandler(webapp.RequestHandler):
 
 class chkWooyunSubmitRSS():
 
-    def __init__(self,url):
+    def __init__(self,url=""):
         self.url = url
         #self.keyword = keyword
         #self.chk_id = chk_id
@@ -221,7 +223,7 @@ class chkWooyunSubmitRSS():
             req = urlfetch.fetch(self.url)
         except :
             logging.error("fetch data error.can't download")
-            return none
+            return None
         # save chk status in AppConfig.last_get_status
         if req.status_code == 200:
             logging.info("fetch info status OK.")
@@ -287,7 +289,7 @@ class chkWooyunSubmitRSS():
                                          desc=msg['desc'],author=msg['author'],pub_date=dt,
                                          detail=msg['detail'],save_id =save_id)
             item.put()
-            logging.info("A Info Data store in DB.")
+            #logging.info("A Info Data store in DB.")
             repeat = False
         return not repeat
 

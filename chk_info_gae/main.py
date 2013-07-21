@@ -162,7 +162,7 @@ class resHandler(webapp.RequestHandler):
                     logging.info('Lisk check /chk/' + item.name)
                     # maybe bug: confirm bug.
                     #self.redirect('/chk/' + item.name)
-                    res_pool = models.ResPool.all().filter('site_type =',chk_cfg.site_type)
+                    res_pool = models.ResPool.all().filter('site_type =',item.site_type)
                     for res in res_pool:
                         chkHandler().chk_keywords(item,res)
         else:

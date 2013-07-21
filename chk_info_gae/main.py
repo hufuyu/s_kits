@@ -122,12 +122,15 @@ class dailyHandler(webapp.RequestHandler):
         else:
             logging.info('Nothing find CheckConfig. maybe need check.')
         # send a summary email which keyword is null.
-        chk_config = models.CheckConfig.all().filter('key_words =','')
+        chk_config = models.CheckConfig.all()
         if chk_config.get():
             for chk_cfg in chk_config.run():
-                res_pool = models.ResPool.all().filter('site_type =',chk_cfg.site_type)
-                for res in res_pool:
-                    chkHandler().chk_keywords(chk_cfg,res)
+                # if send everyone a email,commit next line.add other mark.
+                if not chk_cfg.key_words:
+##                    self.redirect('/chk/' + item.name)
+                    res_pool = models.ResPool.all().filter('site_type =',chk_cfg.site_type)
+                    for res in res_pool:
+                        chkHandler().chk_keywords(chk_cfg,res)
         else:
             logging.info("No need send a summary mail")
 
@@ -156,7 +159,12 @@ class resHandler(webapp.RequestHandler):
         if chk.get():
             for item in chk.run():
                 if item.key_words and item.name:
-                    self.redirect('/chk/' + item.name)
+                    logging.info('Lisk check /chk/' + item.name)
+                    # maybe bug: confirm bug.
+                    #self.redirect('/chk/' + item.name)
+                    res_pool = models.ResPool.all().filter('site_type =',chk_cfg.site_type)
+                    for res in res_pool:
+                        chkHandler().chk_keywords(item,res)
         else:
             logging.info('No Need check [' + site +'],Pls set it first')
 
@@ -195,7 +203,7 @@ class chkHandler(webapp.RequestHandler):
         for res in res_pool.run():
             # check gap, if need fetch data
             #if chk_cfg.key_words:
-             self.chk_keywords(chk_cfg,res)
+            self.chk_keywords(chk_cfg,res)
 
     def chk_keywords(self,chk_cfg,res):
             # chk data which contain keyword
@@ -203,6 +211,7 @@ class chkHandler(webapp.RequestHandler):
             key_msgs = chkWooyunSubmitRSS().checkKeyWord(chk_cfg.last_chk_id,chk_cfg.key_words)
             chk_cfg.last_chk_id = res.last_save_id
             chk_cfg.put()
+            logging.info("Chk_id renew.")
         else:
             key_msgs = None
 
@@ -347,20 +356,21 @@ class chkWooyunSubmitRSS():
         return guid_list
 
     def checkKeyWord(self,chk_id,keywords):
-        wooyun = models.WooyunSubmitData.all()
+        wooyun = models.WooyunSubmitData.all().filter('save_id >',chk_id)
         notice  = []
         if keywords:
             # replace ',' before saved
             keywords = keywords.split(',')
-        wooyun.filter('save_id >',chk_id)
         for item in wooyun.run():
             if not keywords or self._hasKeyword(item,keywords):
                 notice.append(item)
+
         return notice
 
     def _hasKeyword(self,item,keywords):
         for key in keywords:
             if key in item.title or key in item.desc:
+                logging.info("Find Key word")
                 return True
         return False
 

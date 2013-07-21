@@ -8,8 +8,8 @@
 # Licence:     BSD
 #---
 
-#SEND_ADDR       = 'hufuyu@gmail.com'
-SEND_ADDR       = 'chk-info@appspot.com'
+SEND_ADDR       = 'hufuyu@gmail.com'
+#SEND_ADDR       = 'chk-info@appspot.com'
 
 # init datebase,Pls set complex enough.
 # THis only use onetime.

@@ -1,4 +1,4 @@
-﻿Requriement
+﻿CiMon Requriement
 -----
 
 ## 1. 概况
@@ -10,44 +10,52 @@
 ## 2. 功能
 
 ###  2.1  抓取网站的最新信息：  
-	*  乌云站点
-	  1）可先获取submit的RSS，如果新增的数量为10，表示更新可能超过10个，信息可能有遗漏，获取url列表
-	  2）获取submit的“更多”页面，获取更新信息，获取url列表
-	  3）根据之前的URL列表，获取详细信息
-	  4）获取“最新公开的信息”，获取
-	* CNVD
-	* 
-	* 自定义的blog
-	* 微博（数据库设计，不一定实现）
-	
+*  乌云站点
+  1）可先获取submit的RSS，如果新增的数量为10，表示更新可能超过10个，信息可能有遗漏，获取url列表
+  2）获取submit的“更多”页面，获取更新信息，获取url列表
+  3）根据之前的URL列表，获取详细信息
+  4）获取“最新公开的信息”，获取
+* CNVD
+* 
+* 自定义的blog
+* 微博（数据库设计，不一定实现）
+
+###  2.2  网站监控功能
+获取制定的url，记录 返回状态  页面的字符  耗时  页面是否变化（md5、304、）
+
+
+###  2.3  数据接收功能
+提供接口，收集信息（主动提交的）
+
 ###  2.2  功能要求
-	* 邮件内容可以订制（默认为通用模板）
-	* 发送邮件的频率可以设定
-	* 支持发送给管理员系统运行状况的报告（紧急及定期）
-	* 检查系统新版本的功能
-	* 提交用户建议并汇总(使用‘magic code’激活统计部分，独立模块)
-	* 查询最新数据的功能（管理员权限）
-	* 全文检索
-	* 数据导出的功能，csv格式
-	* 设计Logo及favcion.ico
-	* 记录版本变更状况		
-	* 数据的导入
-	* 系统运行情况进行记录
-	* 防止部分URL被非法调用<用refer进行判断>
-	* 设置抓取数据的频率
-	* 自定义检查（设置检查的范围，save_id范围，自定义关键字，与查询有点相似）
+* 邮件内容可以订制（默认为通用模板）
+* 发送邮件的频率可以设定
+* 支持发送给管理员系统运行状况的报告（紧急及定期）
+* 检查系统新版本的功能
+* 提交用户建议并汇总(使用‘magic code’激活统计部分，独立模块)
+* 查询最新数据的功能（管理员权限）
+* 全文检索
+* 数据导出的功能，csv格式
+* 设计Logo及favcion.ico
+* 记录版本变更状况		
+* 数据的导入
+* 系统运行情况进行记录
+* 防止部分URL被非法调用<用refer进行判断>
+* 设置抓取数据的频率
+* 自定义检查（设置检查的范围，save_id范围，自定义关键字，与查询有点相似）
 	
 
 ###  2.3  其他要求
-	* 插件系统，支持扩展 
-	* L10N（支持多语言）
-	* 后台支持task queue
-	* 每一种资源为一个扩展，初始化时，在ResPool中添加一行
+* Test First(Test Driven)
+* 插件系统，支持扩展 
+* L10N（支持多语言）
+* 后台支持task queue
+* 每一种资源为一个扩展，初始化时，在ResPool中添加一行
 	
  
 ##  3. 界面（URLs）
 
-### 3.1  菜单
+### 3.1  sitemap
 
 
 ### 3.2  URLs
@@ -61,9 +69,18 @@
 *  /data/(browse|search|export)/		    对数据进行操作
 *  /stat/									统计及可视化展示
 
-##  4  数据库设计
+### 3.3  API
+*  /api/takoen= & op=  & args= 
+*  /sop/task/                               
 
-### 4.1  基本类及方法
+##  4  业务设计
+
+###  4.1  数据流
+
+
+##  5  数据库设计
+
+### 5.1  基本类及方法
 ```
 class GDB_BASE(db.Model):
 	
@@ -80,7 +97,7 @@ class GDB_BASE(db.Model):
 		pass
 ```
 
-### 4.2  表的设计
+### 5.2  表的设计
 
 ```
 class ResPool(db.Model):
@@ -102,7 +119,7 @@ class MonitorConfig(db.Model):
     site_type       = db.StringProperty(required=True,choices=set(['wooyun_submit',]))
     last_chk_id     = db.IntegerProperty(required=True)
     key_words       = db.StringProperty()
-    # send one email  everyday or other(at 8.pm\14pm\16pm).
+
     notice          = db.BooleanProperty(default=True)
     mail_to         = db.StringProperty()
     sent_freq       = db.StringProperty()
@@ -111,9 +128,14 @@ class MonitorConfig(db.Model):
     total_mail_num  = db.IntegerProperty(default=0)
     total_chk_num   = db.IntegerProperty(default=0)
 	# set
-	send_time       =
+	send_time       = db.StringProperty()
+    # send one email  everyday or other(at 8am\14pm\16pm). eg: 08:05,16:00    
 	summary_mail    = db.BooleanProperty(default=True)
 	summary_fraq    = db.StringProperty()
+
+    def get_Mon_Items(self,site_type,):
+        # return a list, retime check or summary check.
+        pass
 
 class WooyunData(db.Model):
     #'link','title','desc','stauts''pubDate','author','guid'

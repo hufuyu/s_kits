@@ -49,9 +49,20 @@ def scan():
         print("---  exec cmd:  %s",awvs_cmd)
 
         # ~~~~~~~~~~~~~~~~~~~ Error!!!  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Maybe  this is not work at windows,change it! 
-        # Single Process!  Too slow!
-        
+		#由于windows不支持os.wait()，系统会不停的创建进程， 这里使用一个sets()作为一个池，控制进程的数量，
+		#使用subprogress 调用外部命令完成工作
+		'''
+		ps = set()
+		max_p = 20
+		p = subprocess.Popen(cmd,stdin=None,stdout=None, shell=True)
+		ps.add(p)
+		while len(ps) >= max_p:
+			time.sleep(0.001)#这个值如果设置得当，可以不再下面进行异常捕获的操作
+			try:
+				ps.difference_update(d for d in ps if d.poll() is not None)
+			except:
+				pass
+        '''
         os.system(awvs_cmd)
 
 if __name__ == "__main__":
